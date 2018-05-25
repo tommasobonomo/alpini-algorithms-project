@@ -5,13 +5,10 @@ using namespace std;
 #include <queue>
 #include <vector>
 
-int N, M;
 #define graph vector<vector<int>>
 
-vector<bool> isValid;
-vector<int> numeroVicini;
-
-bool hasCycleWrp(graph &grafo, int now, vector<bool> &visited, int prec) {
+bool hasCycleWrp(graph &grafo, int now, vector<bool> &visited, int prec,
+                 vector<bool> &isValid) {
   visited[now] = true;
   for (int i = 0; i < grafo[now].size(); i++) {
     int vicino = grafo[now][i];
@@ -20,7 +17,7 @@ bool hasCycleWrp(graph &grafo, int now, vector<bool> &visited, int prec) {
         return true;
       else {
         prec = now;
-        hasCycleWrp(grafo, vicino, visited, prec);
+        hasCycleWrp(grafo, vicino, visited, prec, isValid);
       }
     }
   }
@@ -28,84 +25,90 @@ bool hasCycleWrp(graph &grafo, int now, vector<bool> &visited, int prec) {
   return false;
 }
 
-bool hasCycle(graph &grafo, int nodo) {
+bool hasCycle(graph &grafo, int nodo, vector<bool> &isValid) {
   vector<bool> visited(grafo.size());
-  return hasCycleWrp(grafo, nodo, visited, -1);
+  return hasCycleWrp(grafo, nodo, visited, -1, isValid);
 }
 
-int noNeighbour(vector<int> v) {
+bool isGraphEmpty(vector<bool> &isValid) {
+  for (bool node : isValid) {
+    if (node) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// void unvalidateFoglie(graph g) {
+//   queue<int> q;
+
+//   for (int i = 0; i < g.size(); i++) {
+//     if (noNeighbour(g[i]) < 2)
+//       q.push(i);
+//   }
+
+//   while (!q.empty()) {
+
+//     int tmp = q.front();
+//     isValid[tmp] = false;
+
+//     for (int k = 0; k < g[tmp].size(); k++) {
+//       if (isValid[g[tmp][k]] == true && noNeighbour(g[g[tmp][k]]) < 2)
+//         q.push(g[tmp][k]);
+//     }
+//     q.pop();
+//   }
+// }
+
+int numNeighbours(vector<int> &neighbours, vector<bool> &isValid) {
   int res = 0;
-  for (int k = 0; k < v.size(); k++) {
-    if (isValid[v[k]] == true)
+  for (int neighbour : neighbours) {
+    if (isValid[neighbour])
       res++;
   }
-
   return res;
 }
 
-void unvalidateFoglie(graph g) {
+void pruneLeaves(graph &grafo, vector<bool> &isValid) {
   queue<int> q;
 
-  for (int i = 0; i < g.size(); i++) {
-    if (noNeighbour(g[i]) < 2)
+  // Aggiungo tutte le foglie alla coda
+  for (int i = 0; i < grafo.size(); i++) {
+    if (numNeighbours(grafo[i], isValid) < 2) {
       q.push(i);
+    }
   }
 
   while (!q.empty()) {
+    int leaf = q.front();
+    isValid[leaf] = false;
 
-    int tmp = q.front();
-    isValid[tmp] = false;
-
-    for (int k = 0; k < g[tmp].size(); k++) {
-      if (isValid[g[tmp][k]] == true && noNeighbour(g[g[tmp][k]]) < 2)
-        q.push(g[tmp][k]);
+    for (int child : grafo[leaf]) {
+      if (isValid[child] && numNeighbours(grafo[child], isValid) < 2) {
+        q.push(child);
+      }
     }
     q.pop();
   }
 }
 
-bool allIsInvalid(graph g) {
-  for (int i = 0; i < N; i++) {
-    if (isValid[i] == true)
-      return false;
-  }
-
-  return true;
-}
-
-void aggiornaNumeriVicini(graph g) {
-  for (int i = 0; i < g.size(); i++) {
-    if (isValid[i] == true)
-      numeroVicini[i] = noNeighbour(g[i]);
-    else
-      numeroVicini[i] = 0;
-  }
-}
-
-int coefficenteGiorgio(graph g, int node) {
-  int tot = 0;
-  for (int i = 0; i < g[node].size(); i++) {
-    tot = tot + numeroVicini[g[node][i]];
-  }
-
-  return tot;
-}
-
 int main() {
+
   helpers::setup();
   ifstream in("input.txt");
   ofstream out("output.txt");
 
+  int N, M;
   in >> N >> M;
 
   graph g(N);
-  isValid.resize(N);
-  numeroVicini.resize(N);
+  vector<bool> isValid;
+  isValid.resize(N, true);
   vector<int> nodiRimossi;
 
-  for (int k = 0; k < N; k++) {
-    isValid[k] = true;
-  }
+  // for (int k = 0; k < N; k++) {
+  //   isValid[k] = true;
+  // }
 
   for (int i = 0; i < M; i++) {
     int src, dest;
@@ -115,29 +118,18 @@ int main() {
     g[dest].push_back(src);
   }
 
-  unvalidateFoglie(g);
-  int maxNode;
-  int maxValue;
+  pruneLeaves(g, isValid);
 
-  while (allIsInvalid(g) == false) {
-    aggiornaNumeriVicini(g);
+  while (!isGraphEmpty(isValid)) {
 
-    maxNode = 0;
-    maxValue = 0;
     for (int i = 0; i < N; i++)
       if (isValid[i] == true) {
-        int tmp = coefficenteGiorgio(g, i);
-
-        if (maxValue < tmp) {
-          maxNode = i;
-          maxValue = tmp;
-        }
       }
 
-    isValid[maxNode] = false;
-    unvalidateFoglie(g);
-    nodiRimossi.push_back(maxNode);
+    // isValid[maxNode] = false;
+    // nodiRimossi.push_back(maxNode);
   }
+
   out << nodiRimossi.size();
   for (int k = 0; k < nodiRimossi.size(); k++) {
     out << " " << nodiRimossi[k];
