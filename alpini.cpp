@@ -101,16 +101,6 @@ int main() {
   in >> N >> M;
 
   graph g(N);
-  vector<bool> isValid;
-  isValid.resize(N, true);
-  vector<int> solution;
-
-  // Inizializzo vettore dei nodi disponibili con
-  // tutti i nodi del grafo
-  vector<int> availableNodes;
-  for (int i = 0; i < N; i++) {
-    availableNodes.push_back(i);
-  }
 
   srand(time(NULL));
 
@@ -122,25 +112,54 @@ int main() {
     g[dest].push_back(src);
   }
 
-  pruneLeaves(g, isValid, availableNodes);
+  int best = N;
 
-  while (!isGraphEmpty(availableNodes)) {
-    int rem_node_index = rand() % availableNodes.size();
-    int rem_node = availableNodes[rem_node_index];
-    solution.push_back(rem_node);
-    isValid[rem_node] = false;
-    removeNodeFromAvailable(availableNodes, rem_node);
+  while (true) {
+    vector<bool> isValid;
+    isValid.resize(N, true);
+    vector<int> solution;
+    solution.resize(0);
 
-    // printDebug(rem_node_index, rem_node, isValid, availableNodes, solution);
+    // Inizializzo vettore dei nodi disponibili con
+    // tutti i nodi del grafo
+    vector<int> availableNodes;
+    availableNodes.resize(0);
+    for (int i = 0; i < N; i++) {
+      availableNodes.push_back(i);
+    }
 
     pruneLeaves(g, isValid, availableNodes);
-  }
 
-  out << solution.size();
-  for (int k = 0; k < solution.size(); k++) {
-    out << " " << solution[k];
+    while (!isGraphEmpty(availableNodes)) {
+      int rem_node_index = rand() % availableNodes.size();
+      int rem_node = availableNodes[rem_node_index];
+      solution.push_back(rem_node);
+      isValid[rem_node] = false;
+      removeNodeFromAvailable(availableNodes, rem_node);
+
+      // printDebug(rem_node_index, rem_node, isValid, availableNodes,
+      // solution);
+
+      pruneLeaves(g, isValid, availableNodes);
+    }
+
+    if (solution.size() < best) {
+      best = solution.size();
+      // cout << "DEBUG: found new solution = " << best << endl;
+      // cout << solution[0];
+      // for (int k = 1; k < solution.size(); k++) {
+      //   cout << " " << solution[k];
+      // }
+      // cout << "#\n";
+
+      out << best;
+      for (int k = 0; k < solution.size(); k++) {
+        out << " " << solution[k];
+      }
+      out << " #\n";
+      out.flush();
+    }
   }
-  out << "#";
 
   return 0;
 }
