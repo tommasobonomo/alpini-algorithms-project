@@ -1,66 +1,57 @@
 using namespace std;
-#include "alpini.h"
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <queue>
 #include <vector>
 
+#include "alpini.h"
+
 #define graph vector<vector<int>>
 
-bool hasCycleWrp(graph &grafo, int now, vector<bool> &visited, int prec,
-                 vector<bool> &isValid) {
-  visited[now] = true;
-  for (int i = 0; i < grafo[now].size(); i++) {
-    int vicino = grafo[now][i];
-    if (vicino != prec && isValid[vicino]) {
-      if (visited[vicino])
-        return true;
-      else {
-        prec = now;
-        hasCycleWrp(grafo, vicino, visited, prec, isValid);
-      }
-    }
+void printDebug(int rem_node_index, int rem_node, vector<bool> &isValid,
+                vector<int> &availableNodes, vector<int> &solution) {
+  cout << "DEBUG:\n";
+  cout << "rem_node_index  = " << rem_node_index << endl;
+  cout << "rem_node        = " << rem_node << endl;
+
+  cout << "isValid:\n";
+  for (int i = 0; i < isValid.size(); i++) {
+    cout << i << " ";
   }
-
-  return false;
-}
-
-bool hasCycle(graph &grafo, int nodo, vector<bool> &isValid) {
-  vector<bool> visited(grafo.size());
-  return hasCycleWrp(grafo, nodo, visited, -1, isValid);
-}
-
-bool isGraphEmpty(vector<bool> &isValid) {
-  for (bool node : isValid) {
-    if (node) {
-      return false;
-    }
+  cout << endl;
+  for (int i = 0; i < isValid.size(); i++) {
+    cout << isValid[i] << " ";
   }
-  return true;
+  cout << endl;
+
+  cout << "availableNodes:\n";
+  for (int i = 0; i < availableNodes.size(); i++) {
+    cout << availableNodes[i] << " ";
+  }
+  cout << endl;
+
+  cout << "solution:\n";
+  for (int i = 0; i < solution.size(); i++) {
+    cout << solution[i] << " ";
+  }
+  cout << endl;
 }
 
-// void unvalidateFoglie(graph g) {
-//   queue<int> q;
+// Funzione helper un attimo incasinata quindi la metto da parte
+void removeNodeFromAvailable(vector<int> &availableNodes, const int node) {
+  // find() trova l'iteratore dell'elemento node in availableNodes
+  // erase() elimina l'elemento dal vettore tramite l'iteratore
+  availableNodes.erase(
+      find(availableNodes.begin(), availableNodes.end(), node));
+}
 
-//   for (int i = 0; i < g.size(); i++) {
-//     if (noNeighbour(g[i]) < 2)
-//       q.push(i);
-//   }
+// Funzione helper che controlla se ho finito il grafo
+bool isGraphEmpty(const vector<int> &availableNodes) {
+  return availableNodes.size() == 0;
+}
 
-//   while (!q.empty()) {
-
-//     int tmp = q.front();
-//     isValid[tmp] = false;
-
-//     for (int k = 0; k < g[tmp].size(); k++) {
-//       if (isValid[g[tmp][k]] == true && noNeighbour(g[g[tmp][k]]) < 2)
-//         q.push(g[tmp][k]);
-//     }
-//     q.pop();
-//   }
-// }
-
-int numNeighbours(vector<int> &neighbours, vector<bool> &isValid) {
+int numNeighbours(const vector<int> &neighbours, const vector<bool> &isValid) {
   int res = 0;
   for (int neighbour : neighbours) {
     if (isValid[neighbour])
@@ -69,25 +60,33 @@ int numNeighbours(vector<int> &neighbours, vector<bool> &isValid) {
   return res;
 }
 
-void pruneLeaves(graph &grafo, vector<bool> &isValid) {
+void pruneLeaves(const graph &grafo, vector<bool> &isValid,
+                 vector<int> &availableNodes) {
   queue<int> q;
 
   // Aggiungo tutte le foglie alla coda
   for (int i = 0; i < grafo.size(); i++) {
-    if (numNeighbours(grafo[i], isValid) < 2) {
+    if (isValid[i] && numNeighbours(grafo[i], isValid) < 2) {
       q.push(i);
+      isValid[i] = false;
     }
   }
 
+  // Per ogni foglia, la rimuovo e vedo se questo implica la creazione
+  // di nuove foglie. Se si, aggiungo alla coda
   while (!q.empty()) {
     int leaf = q.front();
-    isValid[leaf] = false;
 
     for (int child : grafo[leaf]) {
+      // Se child fa parte del grafo e è una foglia, aggiungilo alla coda
       if (isValid[child] && numNeighbours(grafo[child], isValid) < 2) {
         q.push(child);
+        isValid[child] = false;
       }
     }
+
+    // Tolgo la foglia dai nodi disponibili
+    removeNodeFromAvailable(availableNodes, leaf);
     q.pop();
   }
 }
@@ -104,11 +103,16 @@ int main() {
   graph g(N);
   vector<bool> isValid;
   isValid.resize(N, true);
-  vector<int> nodiRimossi;
+  vector<int> solution;
 
-  // for (int k = 0; k < N; k++) {
-  //   isValid[k] = true;
-  // }
+  // Inizializzo vettore dei nodi disponibili con
+  // tutti i nodi del grafo
+  vector<int> availableNodes;
+  for (int i = 0; i < N; i++) {
+    availableNodes.push_back(i);
+  }
+
+  srand(time(NULL));
 
   for (int i = 0; i < M; i++) {
     int src, dest;
@@ -118,30 +122,25 @@ int main() {
     g[dest].push_back(src);
   }
 
-  pruneLeaves(g, isValid);
+  pruneLeaves(g, isValid, availableNodes);
 
-  while (!isGraphEmpty(isValid)) {
+  while (!isGraphEmpty(availableNodes)) {
+    int rem_node_index = rand() % availableNodes.size();
+    int rem_node = availableNodes[rem_node_index];
+    solution.push_back(rem_node);
+    isValid[rem_node] = false;
+    removeNodeFromAvailable(availableNodes, rem_node);
 
-    for (int i = 0; i < N; i++)
-      if (isValid[i] == true) {
-      }
+    // printDebug(rem_node_index, rem_node, isValid, availableNodes, solution);
 
-    // isValid[maxNode] = false;
-    // nodiRimossi.push_back(maxNode);
+    pruneLeaves(g, isValid, availableNodes);
   }
 
-  out << nodiRimossi.size();
-  for (int k = 0; k < nodiRimossi.size(); k++) {
-    out << " " << nodiRimossi[k];
+  out << solution.size();
+  for (int k = 0; k < solution.size(); k++) {
+    out << " " << solution[k];
   }
   out << "#";
-
-  // cout << "Nodi vivi:\n";
-  // unvalidateFoglie(g);
-  // for(int j=0;j<N;j++){
-  //   if(isValid[j]==true)
-  //     cout << j << " ";
-  // }
 
   return 0;
 }
