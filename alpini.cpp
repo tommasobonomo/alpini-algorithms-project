@@ -91,32 +91,45 @@ void pruneLeaves(const graph &grafo, vector<bool> &isValid,
   }
 }
 
-int main() {
+void branchNbound(const graph &grafo, vector<bool> &isValid,
+                  vector<int> &availableNodes, vector<int> &solution, int &best,
+                  ofstream &out) {
+  if (isGraphEmpty(availableNodes)) {
+    best = solution.size();
+    out << best;
+    for (int k = 0; k < solution.size(); k++) {
+      out << " " << solution[k];
+    }
+    out << " #\n";
+    out.flush();
+  } else {
+    random_shuffle(availableNodes.begin(), availableNodes.end());
 
-  helpers::setup();
-  ifstream in("input.txt");
-  ofstream out("output.txt");
+    for (int choice : availableNodes) {
+      if (solution.size() + 1 < best) {
 
-  int N, M;
-  in >> N >> M;
+        vector<int> tmpSolution = solution;
+        tmpSolution.push_back(choice);
 
-  graph g(N);
+        vector<int> tmpAvailableNodes = availableNodes;
+        removeNodeFromAvailable(tmpAvailableNodes, choice);
 
-  srand(time(NULL));
+        vector<bool> tmpIsValid = isValid;
+        tmpIsValid[choice] = false;
 
-  for (int i = 0; i < M; i++) {
-    int src, dest;
-    in >> src >> dest;
+        pruneLeaves(grafo, tmpIsValid, tmpAvailableNodes);
 
-    g[src].push_back(dest);
-    g[dest].push_back(src);
+        branchNbound(grafo, tmpIsValid, tmpAvailableNodes, tmpSolution, best,
+                     out);
+      }
+    }
   }
-
-  int best = N;
-
+}
+void completelyRandom(graph &g, ofstream &out) {
+  int best = g.size();
   while (true) {
     vector<bool> isValid;
-    isValid.resize(N, true);
+    isValid.resize(g.size(), true);
     vector<int> solution;
     solution.resize(0);
 
@@ -124,7 +137,7 @@ int main() {
     // tutti i nodi del grafo
     vector<int> availableNodes;
     availableNodes.resize(0);
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < g.size(); i++) {
       availableNodes.push_back(i);
     }
 
@@ -160,6 +173,49 @@ int main() {
       out.flush();
     }
   }
+}
+
+int main() {
+
+  helpers::setup();
+  ifstream in("input.txt");
+  ofstream out("output.txt");
+
+  int N, M;
+  in >> N >> M;
+
+  graph g(N);
+
+  srand(time(NULL));
+
+  for (int i = 0; i < M; i++) {
+    int src, dest;
+    in >> src >> dest;
+
+    g[src].push_back(dest);
+    g[dest].push_back(src);
+  }
+
+  int best = N;
+
+  vector<bool> isValid;
+  isValid.resize(N, true);
+  vector<int> solution;
+  solution.resize(0);
+
+  // Inizializzo vettore dei nodi disponibili con
+  // tutti i nodi del grafo
+  vector<int> availableNodes;
+  availableNodes.resize(0);
+  for (int i = 0; i < N; i++) {
+    availableNodes.push_back(i);
+  }
+
+  pruneLeaves(g, isValid, availableNodes);
+
+  branchNbound(g, isValid, availableNodes, solution, best, out);
+
+  // completelyRandom(g, out);
 
   return 0;
 }
