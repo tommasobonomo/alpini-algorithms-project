@@ -74,6 +74,7 @@ int fattoreG(const graph &grafo, const int nodo, const vector<bool> &isValid) {
   return res;
 }
 
+      res += numNeighbours(grafo[vicino], isValid);
 void pruneLeavesAndSort(const graph &grafo, vector<bool> &isValid,
                         vector<int> &availableNodes) {
   queue<int> q;
