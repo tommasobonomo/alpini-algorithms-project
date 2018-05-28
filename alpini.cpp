@@ -153,10 +153,19 @@ void branchNbound(const graph &grafo, vector<bool> &isValid,
       if (choice == first && i < availableNodes.size() - 1) {
         first = availableNodes[i + 1];
         isFirst = true;
+        // TODO: Check questo modo di tornare alla root, non funziona dopo il
+        // primo nodo e i suoi vicini
       }
     }
   }
 }
+
+/**
+ * APPROCCIO POSSIBILE:
+ * Dopo ogni pruneLeaves, per ogni availableNode vedi quanti altri
+ * availableNodes elimineresti. Sorta gli available nodes in maniera crescente
+ * basandoti su quel numero
+ */
 
 int main() {
 
