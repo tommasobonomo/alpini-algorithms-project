@@ -64,6 +64,16 @@ int numNeighbours(const vector<int> &neighbours, const vector<bool> &isValid) {
   return res;
 }
 
+int fattoreG(const graph &grafo, const int nodo, const vector<bool> &isValid) {
+  int res = 0;
+  for (int vicino : grafo[nodo]) {
+    if (isValid[vicino]) {
+      res += numNeighbours(grafo[vicino], isValid);
+    }
+  }
+  return res;
+}
+
 void pruneLeavesAndSort(const graph &grafo, vector<bool> &isValid,
                         vector<int> &availableNodes) {
   queue<int> q;
@@ -94,15 +104,15 @@ void pruneLeavesAndSort(const graph &grafo, vector<bool> &isValid,
     q.pop();
   }
 
-  vector<pair<int, int>> nodeAndDeg(availableNodes.size());
+  vector<pair<int, int>> nodeAndG(availableNodes.size());
   for (int i = 0; i < availableNodes.size(); i++) {
-    nodeAndDeg[i].first = availableNodes[i];
-    nodeAndDeg[i].second = numNeighbours(grafo[availableNodes[i]], isValid);
+    nodeAndG[i].first = availableNodes[i];
+    nodeAndG[i].second = fattoreG(grafo, availableNodes[i], isValid);
   }
-  sort(nodeAndDeg.begin(), nodeAndDeg.end(), compareWeights);
+  sort(nodeAndG.begin(), nodeAndG.end(), compareWeights);
 
   for (int i = 0; i < availableNodes.size(); i++) {
-    availableNodes[i] = nodeAndDeg[i].first;
+    availableNodes[i] = nodeAndG[i].first;
   }
 }
 
