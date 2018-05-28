@@ -107,7 +107,8 @@ void pruneLeavesAndSort(const graph &grafo, vector<bool> &isValid,
   vector<pair<int, int>> nodeAndG(availableNodes.size());
   for (int i = 0; i < availableNodes.size(); i++) {
     nodeAndG[i].first = availableNodes[i];
-    nodeAndG[i].second = fattoreG(grafo, availableNodes[i], isValid);
+    nodeAndG[i].second = numNeighbours(grafo[i], isValid);
+    // nodeAndG[i].second = fattoreG(grafo, availableNodes[i], isValid);
   }
   sort(nodeAndG.begin(), nodeAndG.end(), compareWeights);
 
@@ -128,7 +129,6 @@ void branchNbound(const graph &grafo, vector<bool> &isValid,
     out << " #\n";
     out.flush();
   } else {
-    // random_shuffle(availableNodes.begin(), availableNodes.end());
 
     for (int choice : availableNodes) {
       if (solution.size() + 1 < best) {
@@ -147,55 +147,6 @@ void branchNbound(const graph &grafo, vector<bool> &isValid,
         branchNbound(grafo, tmpIsValid, tmpAvailableNodes, tmpSolution, best,
                      out);
       }
-    }
-  }
-}
-void completelyRandom(graph &g, ofstream &out) {
-  int best = g.size();
-  while (true) {
-    vector<bool> isValid;
-    isValid.resize(g.size(), true);
-    vector<int> solution;
-    solution.resize(0);
-
-    // Inizializzo vettore dei nodi disponibili con
-    // tutti i nodi del grafo
-    vector<int> availableNodes;
-    availableNodes.resize(0);
-    for (int i = 0; i < g.size(); i++) {
-      availableNodes.push_back(i);
-    }
-
-    pruneLeavesAndSort(g, isValid, availableNodes);
-
-    while (!isGraphEmpty(availableNodes)) {
-      int rem_node_index = rand() % availableNodes.size();
-      int rem_node = availableNodes[rem_node_index];
-      solution.push_back(rem_node);
-      isValid[rem_node] = false;
-      removeNodeFromAvailable(availableNodes, rem_node);
-
-      // printDebug(rem_node_index, rem_node, isValid, availableNodes,
-      // solution);
-
-      pruneLeavesAndSort(g, isValid, availableNodes);
-    }
-
-    if (solution.size() < best) {
-      best = solution.size();
-      // cout << "DEBUG: found new solution = " << best << endl;
-      // cout << solution[0];
-      // for (int k = 1; k < solution.size(); k++) {
-      //   cout << " " << solution[k];
-      // }
-      // cout << "#\n";
-
-      out << best;
-      for (int k = 0; k < solution.size(); k++) {
-        out << " " << solution[k];
-      }
-      out << " #\n";
-      out.flush();
     }
   }
 }
