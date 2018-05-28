@@ -107,8 +107,10 @@ void pruneLeavesAndSort(const graph &grafo, vector<bool> &isValid,
   vector<pair<int, int>> nodeAndG(availableNodes.size());
   for (int i = 0; i < availableNodes.size(); i++) {
     nodeAndG[i].first = availableNodes[i];
-    nodeAndG[i].second = numNeighbours(grafo[i], isValid);
-    // nodeAndG[i].second = fattoreG(grafo, availableNodes[i], isValid);
+    int deg = numNeighbours(grafo[availableNodes[i]], isValid);
+    int fattG = fattoreG(grafo, availableNodes[i], isValid);
+    long int rapp = deg * fattG;
+    nodeAndG[i].second = rapp;
   }
   sort(nodeAndG.begin(), nodeAndG.end(), compareWeights);
 
