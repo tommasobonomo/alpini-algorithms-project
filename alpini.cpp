@@ -64,6 +64,16 @@ int numNeighbours(const vector<int> &neighbours, const vector<bool> &isValid) {
   return res;
 }
 
+int fattoreG(const graph &grafo, const int nodo, const vector<bool> &isValid) {
+  int res = 0;
+  for (int vicino : grafo[nodo]) {
+    if (isValid[vicino]) {
+      res += numNeighbours(grafo[vicino], isValid);
+    }
+  }
+  return res;
+}
+
 void pruneLeavesAndSort(const graph &grafo, vector<bool> &isValid,
                         vector<int> &availableNodes) {
   queue<int> q;
@@ -94,21 +104,22 @@ void pruneLeavesAndSort(const graph &grafo, vector<bool> &isValid,
     q.pop();
   }
 
-  vector<pair<int, int>> nodeAndDeg(availableNodes.size());
+  vector<pair<int, int>> nodeAndG(availableNodes.size());
   for (int i = 0; i < availableNodes.size(); i++) {
-    nodeAndDeg[i].first = availableNodes[i];
-    nodeAndDeg[i].second = numNeighbours(grafo[availableNodes[i]], isValid);
+    nodeAndG[i].first = availableNodes[i];
+    int deg = numNeighbours(grafo[availableNodes[i]], isValid);
+    nodeAndG[i].second = deg;
   }
-  sort(nodeAndDeg.begin(), nodeAndDeg.end(), compareWeights);
+  sort(nodeAndG.begin(), nodeAndG.end(), compareWeights);
 
   for (int i = 0; i < availableNodes.size(); i++) {
-    availableNodes[i] = nodeAndDeg[i].first;
+    availableNodes[i] = nodeAndG[i].first;
   }
 }
 
 void branchNbound(const graph &grafo, vector<bool> &isValid,
                   vector<int> &availableNodes, vector<int> &solution, int &best,
-                  ofstream &out) {
+                  ofstream &out, int &first, bool &goingDown) {
   if (isGraphEmpty(availableNodes)) {
     best = solution.size();
     out << best;
@@ -117,11 +128,11 @@ void branchNbound(const graph &grafo, vector<bool> &isValid,
     }
     out << " #\n";
     out.flush();
+    goingDown = false;
   } else {
-    // random_shuffle(availableNodes.begin(), availableNodes.end());
-
-    for (int choice : availableNodes) {
-      if (solution.size() + 1 < best) {
+    for (int i = 0; i < availableNodes.size(); i++) {
+      int choice = availableNodes[i];
+      if (solution.size() + 1 < best && goingDown) {
 
         vector<int> tmpSolution = solution;
         tmpSolution.push_back(choice);
@@ -135,57 +146,15 @@ void branchNbound(const graph &grafo, vector<bool> &isValid,
         pruneLeavesAndSort(grafo, tmpIsValid, tmpAvailableNodes);
 
         branchNbound(grafo, tmpIsValid, tmpAvailableNodes, tmpSolution, best,
-                     out);
+                     out, first, goingDown);
+      } else {
+        goingDown = false;
       }
-    }
-  }
-}
-void completelyRandom(graph &g, ofstream &out) {
-  int best = g.size();
-  while (true) {
-    vector<bool> isValid;
-    isValid.resize(g.size(), true);
-    vector<int> solution;
-    solution.resize(0);
 
-    // Inizializzo vettore dei nodi disponibili con
-    // tutti i nodi del grafo
-    vector<int> availableNodes;
-    availableNodes.resize(0);
-    for (int i = 0; i < g.size(); i++) {
-      availableNodes.push_back(i);
-    }
-
-    pruneLeavesAndSort(g, isValid, availableNodes);
-
-    while (!isGraphEmpty(availableNodes)) {
-      int rem_node_index = rand() % availableNodes.size();
-      int rem_node = availableNodes[rem_node_index];
-      solution.push_back(rem_node);
-      isValid[rem_node] = false;
-      removeNodeFromAvailable(availableNodes, rem_node);
-
-      // printDebug(rem_node_index, rem_node, isValid, availableNodes,
-      // solution);
-
-      pruneLeavesAndSort(g, isValid, availableNodes);
-    }
-
-    if (solution.size() < best) {
-      best = solution.size();
-      // cout << "DEBUG: found new solution = " << best << endl;
-      // cout << solution[0];
-      // for (int k = 1; k < solution.size(); k++) {
-      //   cout << " " << solution[k];
-      // }
-      // cout << "#\n";
-
-      out << best;
-      for (int k = 0; k < solution.size(); k++) {
-        out << " " << solution[k];
+      if (choice == first && i < availableNodes.size() - 1) {
+        first = availableNodes[i + 1];
+        goingDown = true;
       }
-      out << " #\n";
-      out.flush();
     }
   }
 }
@@ -228,7 +197,11 @@ int main() {
 
   pruneLeavesAndSort(g, isValid, availableNodes);
 
-  branchNbound(g, isValid, availableNodes, solution, best, out);
+  int first = availableNodes[0];
+  bool goingDown = true;
+
+  branchNbound(g, isValid, availableNodes, solution, best, out, first,
+               goingDown);
 
   // completelyRandom(g, out);
 
