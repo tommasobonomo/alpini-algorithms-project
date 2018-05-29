@@ -108,9 +108,7 @@ void pruneLeavesAndSort(const graph &grafo, vector<bool> &isValid,
   for (int i = 0; i < availableNodes.size(); i++) {
     nodeAndG[i].first = availableNodes[i];
     int deg = numNeighbours(grafo[availableNodes[i]], isValid);
-    int fattG = fattoreG(grafo, availableNodes[i], isValid);
-    long int prod = deg * fattG;
-    nodeAndG[i].second = prod;
+    nodeAndG[i].second = deg;
   }
   sort(nodeAndG.begin(), nodeAndG.end(), compareWeights);
 
@@ -121,7 +119,7 @@ void pruneLeavesAndSort(const graph &grafo, vector<bool> &isValid,
 
 void branchNbound(const graph &grafo, vector<bool> &isValid,
                   vector<int> &availableNodes, vector<int> &solution, int &best,
-                  ofstream &out, int &first, bool &isFirst) {
+                  ofstream &out, int &first, bool &goingDown) {
   if (isGraphEmpty(availableNodes)) {
     best = solution.size();
     out << best;
@@ -130,11 +128,11 @@ void branchNbound(const graph &grafo, vector<bool> &isValid,
     }
     out << " #\n";
     out.flush();
-    isFirst = false;
+    goingDown = false;
   } else {
     for (int i = 0; i < availableNodes.size(); i++) {
       int choice = availableNodes[i];
-      if (solution.size() + 1 < best && isFirst) {
+      if (solution.size() + 1 < best && goingDown) {
 
         vector<int> tmpSolution = solution;
         tmpSolution.push_back(choice);
@@ -148,11 +146,14 @@ void branchNbound(const graph &grafo, vector<bool> &isValid,
         pruneLeavesAndSort(grafo, tmpIsValid, tmpAvailableNodes);
 
         branchNbound(grafo, tmpIsValid, tmpAvailableNodes, tmpSolution, best,
-                     out, first, isFirst);
+                     out, first, goingDown);
+      } else {
+        goingDown = false;
       }
+
       if (choice == first && i < availableNodes.size() - 1) {
         first = availableNodes[i + 1];
-        isFirst = true;
+        goingDown = true;
         // TODO: Check questo modo di tornare alla root, non funziona dopo il
         // primo nodo e i suoi vicini
       }
@@ -206,9 +207,10 @@ int main() {
   pruneLeavesAndSort(g, isValid, availableNodes);
 
   int first = availableNodes[0];
-  bool isFirst = true;
+  bool goingDown = true;
 
-  branchNbound(g, isValid, availableNodes, solution, best, out, first, isFirst);
+  branchNbound(g, isValid, availableNodes, solution, best, out, first,
+               goingDown);
 
   // completelyRandom(g, out);
 
