@@ -1,6 +1,6 @@
 alpini
 input.txt
-output.txt
+output*.txt
 .vscode/
 dataset_alpini/
 giorgio
